@@ -1,4 +1,7 @@
 if (WIN32)
+    add_test(NAME windows_installer
+        COMMAND ${PYTHON_EXECUTABLE_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/plugin/test_windows_installer.py)
+
     add_library(lua51_sync_strfmt_pushfstring_module MODULE
         lua51_sync/strfmt_pushfstring_module.c)
     add_custom_target(lua51_sync_artifacts

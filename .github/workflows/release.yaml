@@ -116,7 +116,7 @@ jobs:
 
       - name: Test startup guard and bootstrap config
         run: |
-          ctest --test-dir ./builds/ninja-multi-vcpkg -C RelWithDebInfo --output-on-failure -R "^(startup_guard|luajit_bootstrap_config)$"
+          ctest --test-dir ./builds/ninja-multi-vcpkg -C RelWithDebInfo --output-on-failure --no-tests=error -R "^(startup_guard|luajit_bootstrap_config|windows_installer)$"
 
       - name: CMake install
         run: |

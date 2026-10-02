@@ -31,13 +31,13 @@ if !errorlevel! == 0 (
 )
 
 if not exist "%source%" (
-    echo [ERROR] source directory not find: %source%
+    echo [ERROR] source directory not find: "%source%"
     timeout /t 5
     exit /b 1
 )
 
 if not exist "%destination%" (
-    echo [ERROR] destination directory not find: %destination%
+    echo [ERROR] destination directory not find: "%destination%"
     timeout /t 5
     exit /b 1
 )
@@ -50,7 +50,7 @@ if /i "%1" == "uninstall" (
 
 :install
 REM 1) Shell only to game bin64 (Winmm)
-echo [INFO] install shell -^> %destination%
+echo [INFO] install shell -^> "%destination%"
 set "shell_ok=0"
 if exist "%source%\Winmm.dll" (
     copy /Y "%source%\Winmm.dll" "%destination%\Winmm.dll" >NUL
@@ -71,13 +71,13 @@ if exist "%source%\winmm.dll" (
     set "shell_ok=1"
 )
 if "!shell_ok!"=="0" (
-    echo [ERROR] inject shell missing: no Winmm.dll / winmm.dll under %source%
+    echo [ERROR] inject shell missing: no Winmm.dll / winmm.dll under "%source%"
     timeout /t 5
     exit /b 1
 )
 
 REM 2) Real Injector at mod root (all platforms); never game bin64
-echo [INFO] install Injector -^> %mod_root%
+echo [INFO] install Injector -^> "%mod_root%"
 if exist "%current_dir%\Injector.dll" (
     echo [INFO] Injector already at mod root
 ) else if exist "%source%\Injector.dll" (
@@ -109,7 +109,7 @@ for %%F in (Injector.dll Injector.pdb lua51.dll lua51.pdb lua51DS.dll lua51DS.pd
 REM 3) Business plugins: already under mod\plugins after cmake --install.
 REM    Also accept legacy package tree bin64\windows\plugins and migrate.
 if exist "%source%\plugins" (
-    echo [INFO] migrate package plugins -^> %mod_plugins%
+    echo [INFO] migrate package plugins -^> "%mod_plugins%"
     if not exist "%mod_plugins%" mkdir "%mod_plugins%"
     robocopy "%source%\plugins" "%mod_plugins%" /E /XD deps /NFL /NDL /IS /IT /IM >NUL
     if errorlevel 8 (
@@ -119,14 +119,14 @@ if exist "%source%\plugins" (
     )
 )
 if exist "%mod_plugins%" (
-    echo [INFO] plugins ready at %mod_plugins%
+    echo [INFO] plugins ready at "%mod_plugins%"
 ) else (
-    echo [WARN] no plugins at %mod_plugins% — run cmake --install first
+    echo [WARN] no plugins at "%mod_plugins%" — run cmake --install first
 )
 
 REM 4) Shared deps (third-party + lua51* + signatures): mod\deps only
 if exist "%source%\deps" (
-    echo [INFO] migrate package deps -^> %mod_deps%
+    echo [INFO] migrate package deps -^> "%mod_deps%"
     if not exist "%mod_deps%" mkdir "%mod_deps%"
     robocopy "%source%\deps" "%mod_deps%" /E /NFL /NDL /IS /IT /IM >NUL
     if errorlevel 8 (
@@ -137,30 +137,30 @@ if exist "%source%\deps" (
 )
 REM Legacy: plugins\deps under package or mod → fold into mod\deps
 if exist "%source%\plugins\deps" (
-    echo [INFO] migrate package plugins\deps -^> %mod_deps%
+    echo [INFO] migrate package plugins\deps -^> "%mod_deps%"
     if not exist "%mod_deps%" mkdir "%mod_deps%"
     robocopy "%source%\plugins\deps" "%mod_deps%" /E /NFL /NDL /IS /IT /IM >NUL
 )
 if exist "%mod_plugins%\deps" (
-    echo [INFO] migrate mod plugins\deps -^> %mod_deps%
+    echo [INFO] migrate mod plugins\deps -^> "%mod_deps%"
     if not exist "%mod_deps%" mkdir "%mod_deps%"
     robocopy "%mod_plugins%\deps" "%mod_deps%" /E /NFL /NDL /IS /IT /IM >NUL
-    echo [INFO] removing discarded %mod_plugins%\deps
+    echo [INFO] removing discarded "%mod_plugins%"\deps
     rmdir /S /Q "%mod_plugins%\deps" >NUL 2>NUL
 )
 if exist "%mod_deps%" (
-    echo [INFO] deps ready at %mod_deps%
+    echo [INFO] deps ready at "%mod_deps%"
 ) else (
-    echo [WARN] no deps at %mod_deps% — run cmake --install first
+    echo [WARN] no deps at "%mod_deps%" — run cmake --install first
 )
 
 REM 5) Discard obsolete package-local trees under bin64\windows
 if exist "%source%\plugins" (
-    echo [INFO] removing discarded package tree %source%\plugins
+    echo [INFO] removing discarded package tree "%source%"\plugins
     rmdir /S /Q "%source%\plugins" >NUL 2>NUL
 )
 if exist "%source%\deps" (
-    echo [INFO] removing discarded package tree %source%\deps
+    echo [INFO] removing discarded package tree "%source%"\deps
     rmdir /S /Q "%source%\deps" >NUL 2>NUL
 )
 
@@ -171,9 +171,9 @@ if exist "%current_dir%\Injector.dll" (
     for %%I in ("%current_dir%\Injector.dll") do (
         >"%marker_dir%\ds_luajit_injector.path" echo %%~fI
     )
-    echo [INFO] wrote marker -^> %marker_dir%\ds_luajit_injector.path
+    echo [INFO] wrote marker -^> "%marker_dir%\ds_luajit_injector.path"
 ) else (
-    echo [WARN] skip marker: %current_dir%\Injector.dll missing
+    echo [WARN] skip marker: "%current_dir%"\Injector.dll missing
 )
 
 REM Explicit install is the recovery boundary. Preserve old evidence before resetting.
@@ -197,7 +197,7 @@ goto end
 
 :uninstall
 REM Only remove inject shell + marker from game; leave mod Injector/plugins/deps alone
-echo [INFO] removing injector shell from %destination% ...
+echo [INFO] removing injector shell from "%destination%" ...
 del /Q /F "%destination%\winmm.dll" >NUL 2>NUL
 del /Q /F "%destination%\Winmm.dll" >NUL 2>NUL
 del /Q /F "%destination%\..\data\unsafedata\ds_luajit_injector.path" >NUL 2>NUL
