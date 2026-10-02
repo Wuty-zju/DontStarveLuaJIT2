@@ -22,7 +22,7 @@ static fs::path temp_dir(const char *name) {
 static void test_defaults() {
     const PluginPinConfig cfg = defaults();
     assert(cfg.schema_version == 1);
-    assert(cfg.repo == "Wuty-zju/DontStarveLuaJIT2");
+    assert(cfg.repo == "fesily/DontStarveLuaJIT2");
     assert(cfg.channel_name == "stable");
     assert(cfg.release_tag.empty());
     assert(cfg.follow_latest == true);
@@ -69,7 +69,7 @@ static void test_missing_file_returns_defaults_ok_false() {
     bool ok = true;
     PluginPinConfig cfg = load_from_file(path, &ok);
     assert(ok == false);
-    assert(cfg.repo == "Wuty-zju/DontStarveLuaJIT2");
+    assert(cfg.repo == "fesily/DontStarveLuaJIT2");
     assert(cfg.channel_name == "stable");
     assert(cfg.follow_latest == true);
     assert(cfg.prefer_present.empty());

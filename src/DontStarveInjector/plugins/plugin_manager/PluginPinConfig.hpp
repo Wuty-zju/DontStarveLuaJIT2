@@ -16,7 +16,7 @@ struct PinEntry {
 
 struct PluginPinConfig {
     int schema_version = 1;
-    std::string repo = "Wuty-zju/DontStarveLuaJIT2";
+    std::string repo = "fesily/DontStarveLuaJIT2";
     std::string channel_name = "stable";
     std::string release_tag;
     bool follow_latest = true;
