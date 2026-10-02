@@ -49,6 +49,12 @@ target_link_libraries(test_luajit_bootstrap_config PRIVATE nlohmann_json::nlohma
 target_compile_features(test_luajit_bootstrap_config PRIVATE cxx_std_17)
 add_test(NAME luajit_bootstrap_config COMMAND test_luajit_bootstrap_config)
 
+add_executable(test_numeric_api_identity
+    ${CMAKE_CURRENT_SOURCE_DIR}/plugin/test_numeric_api_identity.cpp)
+target_include_directories(test_numeric_api_identity PRIVATE ${DONTSTARVEINJECTOR_ROOT})
+target_compile_features(test_numeric_api_identity PRIVATE cxx_std_23)
+add_test(NAME numeric_api_identity COMMAND test_numeric_api_identity)
+
 add_executable(test_buffer_name_pool
     ${CMAKE_CURRENT_SOURCE_DIR}/test_buffer_name_pool.cpp)
 target_include_directories(test_buffer_name_pool PRIVATE
@@ -235,6 +241,11 @@ add_executable(test_plugin_pin_config
 target_include_directories(test_plugin_pin_config PRIVATE
     ${CMAKE_SOURCE_DIR}/src/DontStarveInjector)
 target_compile_features(test_plugin_pin_config PRIVATE cxx_std_23)
+if (MSVC)
+    target_compile_options(test_plugin_pin_config PRIVATE /UNDEBUG)
+else()
+    target_compile_options(test_plugin_pin_config PRIVATE -UNDEBUG)
+endif()
 find_package(nlohmann_json CONFIG REQUIRED)
 target_link_libraries(test_plugin_pin_config PRIVATE nlohmann_json::nlohmann_json)
 add_test(NAME plugin_pin_config COMMAND test_plugin_pin_config)
