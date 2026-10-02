@@ -58,48 +58,13 @@ local function main()
 	local os_is_windows = _G.IsWin32()
 	local GameInjector = LoadGameInjector()
 
-	local ModManagerFile = { filepath = nil, json_mode = true }
-	function ModManagerFile:read_file()
-		if not self.filepath then return end
-		local fp = io.open(self.filepath, 'r')
-		if not fp then return end
-		local str = fp:read('*a')
-		fp:close()
-		if self.json_mode then
-			local ok, result = pcall(json.decode, str)
-			return ok and result or nil
-		end
-		return str
-	end
-
-	function ModManagerFile:clean_file()
-		self:write_file(nil)
-	end
-
-	function ModManagerFile:write_file(data)
-		if not self.filepath then return end
-		local fp = io.open(self.filepath, 'w')
-		if not fp then return end
-		if data and self.json_mode then
-			data = json.encode(data)
-		end
-		if data then
-			fp:write(data)
-		end
-
-		fp:close()
-	end
-
-	local luajit_crash = setmetatable({ filepath = "unsafedata/luajit_crash.json", json_mode = false },
-		{ __index = ModManagerFile })
-
-	function luajit_crash:is_crash()
-		local content = self:read_file()
-		return content and #content ~= 0 and false
-	end
-
+	-- The native guard owns its physical path; beta game io redirects unsafedata.
 	AddGamePostInit(function()
-		luajit_crash:clean_file()
+		if GameInjector and GameInjector.DS_LUAJIT_confirm_startup then
+			if not GameInjector.DS_LUAJIT_confirm_startup() then
+				print("Startup confirmation failed; see DontStarveInjector_client.log")
+			end
+		end
 	end)
 
 
@@ -196,32 +161,13 @@ local function main()
 		AddGamePostInit(function()
 			if should_show_dig() then
 				local PopupDialogScreen = require "screens/popupdialog"
-				-- check crash
-				if luajit_crash:is_crash() then
-					TheFrontEnd:PushScreen(PopupDialogScreen(STRINGS.UI.MODSSCREEN.RESTART_TITLE, translate({
-							zh = "检测luajit未成功加载,是否再次尝试?\n\n(还失败可能需要更新,请联系作者)",
-							en =
-							"Detected that luajit failed to load, do you want to try again?\n\n(If it fails again, it may need to be updated, please contact the author)"
-						}),
-						{
-							{
-								text = STRINGS.UI.MAINSCREEN.RESTART,
-								cb = function()
-									TheSim:Quit()
-								end
-							},
-							{ text = STRINGS.UI.MAINSCREEN.OK, cb = function() TheFrontEnd:PopScreen() end }
-						}))
-				else
-					TheFrontEnd:PushScreen(PopupDialogScreen(STRINGS.UI.MAINSCREEN.MODFAILTITLE, translate({
-							zh = [[当前luajit模组未成功安装,前往该模组所在的文件夹,运行install.bat]],
-							en =
-							"The current luajit mod has not been successfully installed, please go to the folder where the luajit mod is located, and run install.bat/.sh to execute the installation"
-						}),
-						{
-							{ text = STRINGS.UI.MAINSCREEN.OK, cb = function() TheFrontEnd:PopScreen() end }
-						}))
-				end
+				-- No native interface means the reason is unknown, not necessarily missing files.
+				TheFrontEnd:PushScreen(PopupDialogScreen(STRINGS.UI.MAINSCREEN.MODFAILTITLE, translate({
+					zh = [[LuaJIT原生接口未就绪，可能是安装不完整或启动保护阻止了注入。请查看游戏bin64目录中的DontStarveInjector_client.log。运行模组目录中的install.bat可重新安装并备份、重置旧启动标记。]],
+					en = "LuaJIT native interface is unavailable. Installation may be incomplete or startup protection may have blocked injection. Check bin64/DontStarveInjector_client.log. Run the mod installer to reinstall and archive/reset the startup marker."
+				}), {
+					{ text = STRINGS.UI.MAINSCREEN.OK, cb = function() TheFrontEnd:PopScreen() end }
+				}))
 			end
 		end)
 	end
@@ -374,37 +320,16 @@ local function main()
 		self.so_version = so_version
 	end
 
-	local luajit_config = setmetatable({ filepath = "unsafedata/luajit_config.json" }, { __index = ModManagerFile })
-	function luajit_config:create(modmain_path, DisableJITWhenServer, AlwaysEnableMod, config)
-		if config == nil then
-			return {
-				modmain_path = modmain_path,
-				DisableJITWhenServer = DisableJITWhenServer,
-				AlwaysEnableMod = AlwaysEnableMod,
-			}
-		else
-			if modmain_path ~= nil then
-				config.modmain_path = modmain_path
-			end
-			if DisableJITWhenServer ~= nil then
-				config.DisableJITWhenServer = DisableJITWhenServer
-			end
-			if AlwaysEnableMod ~= nil then
-				config.AlwaysEnableMod = AlwaysEnableMod
-			end
-			return config
-		end
-	end
-
+	local luajit_config = {}
 	function luajit_config:WriteConfig(modmain_path)
 		if not TheNet:IsDedicated() then
-			local DisableJITWhenServer = GetModConfigData("DisableJITWhenServer")
-			local AlwaysEnableMod = GetModConfigData("AlwaysEnableMod")
-			self.data = self:create(modmain_path, DisableJITWhenServer, AlwaysEnableMod)
-			self:write_file(self.data)
+			local save = GameInjector and GameInjector.DS_LUAJIT_save_bootstrap_config
+			if not save or not save(modmain_path or "", GetModConfigData("DisableJITWhenServer"),
+				GetModConfigData("AlwaysEnableMod")) then
+				print("Failed to save native bootstrap config; see injector log")
+			end
 		end
 	end
-
 
 
 	local function ReloadSim()

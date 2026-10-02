@@ -3,6 +3,9 @@
 #include "config/InjectorHostConfig.hpp"
 #include "MemorySignature.hpp"
 #include "util/inlinehook.hpp"
+#include "config/sources/LuajitConfigFile.hpp"
+#include "core/PluginPath.hpp"
+#include <spdlog/spdlog.h>
 
 #include <filesystem>
 #include <frida-gum.h>
@@ -45,6 +48,24 @@ DONTSTARVEINJECTOR_GAME_API int DS_LUAJIT_update(const char *mod_directory, int 
 
 DONTSTARVEINJECTOR_GAME_API const char *DS_LUAJIT_get_mod_version() {
     return MOD_VERSION;
+}
+
+DONTSTARVEINJECTOR_GAME_API bool DS_LUAJIT_save_bootstrap_config(
+    const char *modmain_path, bool disable_jit_when_server, bool always_enable_mod) {
+    luajit_config config;
+    config.modmain_path = modmain_path ? modmain_path : "";
+    if (config.modmain_path.empty()) {
+        const auto candidate = ds::plugin::injector_module_dir() / "modmain.lua";
+        std::error_code ec;
+        if (std::filesystem::is_regular_file(candidate, ec)) {
+            config.modmain_path = candidate.generic_string();
+        }
+    }
+    config.server_disable_luajit = disable_jit_when_server;
+    config.always_enable_mod = always_enable_mod;
+    const bool ok = config.write_to_file();
+    if (!ok) spdlog::error("failed to save native luajit bootstrap config");
+    return ok;
 }
 
 static void replace_set_thread_name() {

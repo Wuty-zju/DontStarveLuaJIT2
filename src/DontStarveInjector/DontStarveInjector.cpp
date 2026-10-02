@@ -14,6 +14,8 @@
 #include "core/DynamicPluginLoader.hpp"
 #include "core/PluginPath.hpp"
 #include "core/CoreVmBootstrap.hpp"
+#include "core/StartupGuard.hpp"
+#include <chrono>
 
 
 
@@ -87,6 +89,14 @@ static bool server_is_master() {
     return std::string_view{get_cmd()}.contains("DST_Master");
 }
 
+static ds::StartupGuard startup_guard;
+
+DONTSTARVEINJECTOR_GAME_API bool DS_LUAJIT_confirm_startup() {
+    const bool ok = startup_guard.confirm_healthy();
+    if (!ok) spdlog::error("startup health confirmation failed; native marker retained");
+    return ok;
+}
+
 static bool check_crash() {
     if (!getenv("SteamClientLaunch")) {
         return true;
@@ -100,19 +110,13 @@ static bool check_crash() {
 
     auto rootpath = getExePath().parent_path().parent_path();
     auto unsafedatapath = rootpath / "data" / "unsafedata" / "luajit_crash.json";
-    if (std::filesystem::exists(unsafedatapath)) {
-        auto fp = fopen(unsafedatapath.string().c_str(), "r+");
-        char buf[32] = {};
-        auto len = fread(buf, sizeof(char), 16, fp);
-        fclose(fp);
-        if (len > 0) {
-            return false;
-        }
+    const auto token = std::format("{}:{}",
+        gum_process_get_id(), std::chrono::steady_clock::now().time_since_epoch().count());
+    const auto result = startup_guard.arm(unsafedatapath, token);
+    if (result == ds::StartupGuard::Result::io_error) {
+        spdlog::error("startup marker IO failed: {}", unsafedatapath.string());
     }
-    auto fp = fopen(unsafedatapath.string().c_str(), "w");
-    fwrite("{1}", 1, 3, fp);
-    fclose(fp);
-    return true;
+    return result == ds::StartupGuard::Result::allowed;
 }
 
 /* 把字符串转换成hex数组*/
@@ -188,7 +192,7 @@ DONTSTARVEINJECTOR_API void Inject(bool isClient) {
     spdlog::info("Inject start: isClient={} debuggerAttached={}", isClient, gum_process_is_debugger_attached());
 
     if (!check_crash()) {
-        spdlog::error("skip inject, find crash content");
+        spdlog::error("skip inject: native startup marker is nonempty or inaccessible; run install to archive/reset it");
         return;
     }
 

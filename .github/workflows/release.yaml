@@ -107,6 +107,10 @@ jobs:
         run: |
           cmake --build ./builds/ninja-multi-vcpkg --config RelWithDebInfo
 
+      - name: Test startup guard and bootstrap config
+        run: |
+          ctest --test-dir ./builds/ninja-multi-vcpkg -C RelWithDebInfo --output-on-failure -R "^(startup_guard|luajit_bootstrap_config)$"
+
       - name: CMake install
         run: |
           cmake --build ./builds/ninja-multi-vcpkg --config RelWithDebInfo --target install
@@ -157,7 +161,7 @@ jobs:
           python tools/gen_plugins_manifest.py \
             --plugins-dir "$PDIR" \
             --platform "$PLATFORM" \
-            --repo fesily/DontStarveLuaJIT2 \
+            --repo "${{ github.repository }}" \
             --release-tag "$TAG" \
             --mod-version "$VERSION" \
             --source-root . \

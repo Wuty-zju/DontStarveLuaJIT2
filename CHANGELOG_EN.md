@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.1.1
+
+- Fix repeated startup failure after DST public beta redirects Lua unsafedata to user saves. Startup health confirmation and bootstrap configuration writes now use native APIs.
+- Archive/reset legacy startup markers during explicit installation while retaining startup protection.
+- Preserve valid configuration without modmain_path and resolve local mod paths from the Injector module.
+- Correct the unavailable-interface message and use this fork for release manifests and the default plugin channel.
+- Add startup, recovery, and configuration regression tests. In-game compatibility awaits player verification.
+
 ## 2.8.0
 
 - Added LuaJIT Gen GC support (generational GC, frame GC, disabled Full GC).

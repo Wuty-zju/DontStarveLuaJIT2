@@ -33,6 +33,19 @@ add_test(
 set_tests_properties(fork_save_lua PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
+add_executable(test_startup_guard plugin/test_startup_guard.cpp)
+target_include_directories(test_startup_guard PRIVATE ${CMAKE_SOURCE_DIR}/src/DontStarveInjector)
+target_compile_features(test_startup_guard PRIVATE cxx_std_17)
+add_test(NAME startup_guard COMMAND test_startup_guard)
+
+add_executable(test_luajit_bootstrap_config
+    plugin/test_luajit_bootstrap_config.cpp
+    ${CMAKE_SOURCE_DIR}/src/DontStarveInjector/config/sources/LuajitConfigFile.cpp)
+target_include_directories(test_luajit_bootstrap_config PRIVATE ${CMAKE_SOURCE_DIR}/src/DontStarveInjector)
+target_link_libraries(test_luajit_bootstrap_config PRIVATE nlohmann_json::nlohmann_json)
+target_compile_features(test_luajit_bootstrap_config PRIVATE cxx_std_17)
+add_test(NAME luajit_bootstrap_config COMMAND test_luajit_bootstrap_config)
+
 add_executable(test_buffer_name_pool
     ${CMAKE_CURRENT_SOURCE_DIR}/test_buffer_name_pool.cpp)
 target_include_directories(test_buffer_name_pool PRIVATE

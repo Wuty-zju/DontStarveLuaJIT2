@@ -192,6 +192,16 @@ else
 fi
 
 # Launcher rewrite UNCHANGED: LD_PRELOAD=./lib64/libInjector.so (stub)
+# Explicit installation recovers old startup guards; never discard their evidence.
+if [ -f "$marker_dir/luajit_crash.json" ]; then
+    backup=$(mktemp "$marker_dir/luajit_crash.install-backup.XXXXXX.json") || exit 1
+    if ! mv "$marker_dir/luajit_crash.json" "$backup"; then
+        echo "[ERROR] could not archive startup marker"
+        exit 1
+    fi
+    echo "[INFO] archived startup marker -> $backup"
+fi
+
 cd "$destination" || exit 1
 
 if [ -f dontstarve_steam_x64 ] && [ $(stat -c%s dontstarve_steam_x64) -gt 1048576 ]; then

@@ -23,7 +23,9 @@ namespace nlohmann {
         using ds::config::keys::kAlwaysEnableMod;
         using ds::config::keys::kDisableJITWhenServer;
         using ds::config::keys::kModmainPath;
-        j.at(std::string{kModmainPath}).get_to(s.modmain_path);
+        if (j.contains(std::string{kModmainPath})) {
+            j.at(std::string{kModmainPath}).get_to(s.modmain_path);
+        }
 
         if (j.contains(std::string{kDisableJITWhenServer})) {
             j.at(std::string{kDisableJITWhenServer}).get_to(s.server_disable_luajit);
@@ -41,15 +43,12 @@ namespace nlohmann {
 
 std::optional<luajit_config> luajit_config::read_from_file(std::filesystem::path path) {
     if (path.empty()) {
-        path = getGameDir() / "data" / "unsafedata";
-        if (!std::filesystem::exists(path)) {
-            std::filesystem::create_directories(path);
-        }
-        path = path / "luajit_config.json";
+        path = getGameDir() / "data" / "unsafedata" / "luajit_config.json";
     }
-    if (!std::filesystem::exists(path))
+    std::error_code ec;
+    if (!std::filesystem::exists(path, ec) || ec)
         return std::nullopt;
-    std::ifstream sf(path.string().c_str());
+    std::ifstream sf(path);
     if (!sf.is_open())
         return std::nullopt;
     try {
@@ -59,4 +58,18 @@ std::optional<luajit_config> luajit_config::read_from_file(std::filesystem::path
     } catch (...) {
         return std::nullopt;
     }
+}
+
+bool luajit_config::write_to_file(std::filesystem::path path) const {
+    if (path.empty()) {
+        path = getGameDir() / "data" / "unsafedata" / "luajit_config.json";
+    }
+    std::error_code ec;
+    std::filesystem::create_directories(path.parent_path(), ec);
+    if (ec) return false;
+    std::ofstream output(path, std::ios::binary | std::ios::trunc);
+    if (!output) return false;
+    output << nlohmann::json(*this).dump();
+    output.close();
+    return bool(output);
 }

@@ -1182,6 +1182,8 @@ DONTSTARVEINJECTOR_GAME_API void DS_LUAJIT_set_vm_type(const char *type, const c
 DONTSTARVEINJECTOR_GAME_API const char *DS_LUAJIT_get_vm_type_name(int next);
 DONTSTARVEINJECTOR_GAME_API int DS_LUAJIT_update(const char *mod_directory, int tt);
 DONTSTARVEINJECTOR_GAME_API const char *DS_LUAJIT_get_mod_version();
+DONTSTARVEINJECTOR_GAME_API bool DS_LUAJIT_confirm_startup();
+DONTSTARVEINJECTOR_GAME_API bool DS_LUAJIT_save_bootstrap_config(const char *, bool, bool);
 
 char luajit_ds_check_slowtailcall(lua_State *L, const char *chunkname) {
     const char *path, *modstart, *slash;
@@ -1240,6 +1242,8 @@ int luaopen_GameInjector(lua_State* L) {
     module.set_function("DS_LUAJIT_get_vm_type_name", &DS_LUAJIT_get_vm_type_name);
     module.set_function("DS_LUAJIT_update", &DS_LUAJIT_update);
     module.set_function("DS_LUAJIT_get_mod_version", &DS_LUAJIT_get_mod_version);
+    module.set_function("DS_LUAJIT_confirm_startup", &DS_LUAJIT_confirm_startup);
+    module.set_function("DS_LUAJIT_save_bootstrap_config", &DS_LUAJIT_save_bootstrap_config);
 
     // Typed exports from plugins (GiSig trampolines / LuaCFunction).
     module.push();
@@ -1249,4 +1253,3 @@ int luaopen_GameInjector(lua_State* L) {
     lua["GameInjector"] = module;
     return 1;
 }
-

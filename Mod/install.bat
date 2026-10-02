@@ -176,6 +176,22 @@ if exist "%current_dir%\Injector.dll" (
     echo [WARN] skip marker: %current_dir%\Injector.dll missing
 )
 
+REM Explicit install is the recovery boundary. Preserve old evidence before resetting.
+set "crash_marker=%marker_dir%\luajit_crash.json"
+if exist "%crash_marker%" (
+    set "crash_backup=%marker_dir%\luajit_crash.install-backup.!RANDOM!!RANDOM!.json"
+    if exist "!crash_backup!" (
+        echo [ERROR] backup collision; rerun the installer
+        exit /b 1
+    )
+    move /Y "%crash_marker%" "!crash_backup!" >NUL
+    if errorlevel 1 (
+        echo [ERROR] could not archive startup marker; close the game and check permissions
+        exit /b 1
+    )
+    echo [INFO] archived startup marker -^> !crash_backup!
+)
+
 echo [INFO] install success
 goto end
 
