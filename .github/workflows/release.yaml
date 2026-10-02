@@ -114,9 +114,9 @@ jobs:
         run: |
           cmake --build ./builds/ninja-multi-vcpkg --config RelWithDebInfo
 
-      - name: Test startup guard and bootstrap config
+      - name: Test offline compatibility regressions
         run: |
-          ctest --test-dir ./builds/ninja-multi-vcpkg -C RelWithDebInfo --output-on-failure --no-tests=error -R "^(startup_guard|luajit_bootstrap_config|windows_installer)$"
+          ctest --test-dir ./builds/ninja-multi-vcpkg -C RelWithDebInfo --output-on-failure --no-tests=error -R "^(startup_guard|luajit_bootstrap_config|windows_installer|numeric_api_identity|plugin_pin_config)$"
 
       - name: CMake install
         run: |
