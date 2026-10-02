@@ -8,6 +8,13 @@
 #include <vector>
 #include <limits>
 
+#if defined(_WIN64)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
+
 #include <frida-gum.h>
 #include <spdlog/spdlog.h>
 
@@ -15,10 +22,6 @@
 #include "config/InjectorHostConfig.hpp"
 #include "DontStarveSignature.hpp"
 #include "NumericApiIdentity.hpp"
-
-#if defined(_WIN64)
-#include <windows.h>
-#endif
 
 #include "MemorySignature.hpp"
 #include "ctx.hpp"
