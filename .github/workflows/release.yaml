@@ -4,6 +4,12 @@ permissions:
   contents: write
 
 on:
+  workflow_dispatch:
+    inputs:
+      release_ref:
+        description: "Existing release tag to rebuild and publish (empty builds current ref)"
+        required: false
+        default: ""
   push:
     branches:
       - master
@@ -31,6 +37,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
+          ref: ${{ inputs.release_ref || github.ref }}
       - name: Restore ANGLE cache
         if: ${{ matrix.target == 'windows' }}
         id: angle-cache
@@ -153,8 +160,8 @@ jobs:
           fi
           test -n "$(ls -A "$PDIR" 2>/dev/null)" || { echo "ERROR: empty plugins dir: $PDIR"; exit 1; }
           VERSION=$(python -c "import re, pathlib; t=pathlib.Path('CMakeLists.txt').read_text(encoding='utf-8'); m=re.search(r'project\\([^)]*VERSION\\s+([0-9]+\\.[0-9]+\\.[0-9]+)', t); assert m, 'version not found'; print(m.group(1))")
-          TAG="${GITHUB_REF_NAME:-}"
-          if [[ "${GITHUB_REF:-}" == refs/heads/master ]]; then
+          TAG="${{ inputs.release_ref || github.ref_name }}"
+          if [[ "${GITHUB_REF:-}" == refs/heads/master && -z "${{ inputs.release_ref }}" ]]; then
             TAG="preview-${{ github.run_id }}-${GITHUB_SHA:0:7}"
           fi
           mkdir -p dist
@@ -240,7 +247,7 @@ jobs:
 
   publish-release:
     needs: [compile, merge-plugins-manifest]
-    if: startsWith(github.ref, 'refs/tags/') && !startsWith(github.ref, 'refs/tags/preview-')
+    if: (startsWith(github.ref, 'refs/tags/') && !startsWith(github.ref, 'refs/tags/preview-')) || inputs.release_ref != ''
     strategy:
       fail-fast: false
       matrix:
@@ -276,6 +283,7 @@ jobs:
       - name: Publish release assets
         uses: ncipollo/release-action@v1.14.0
         with:
+          tag: ${{ inputs.release_ref || github.ref_name }}
           artifacts: |
             ${{ github.workspace }}/${{ matrix.target }}_Mod.zip
             ${{ github.workspace }}/plugins-manifest.json
@@ -284,7 +292,7 @@ jobs:
 
   publish-preview:
     needs: [compile, merge-plugins-manifest]
-    if: ${{ github.ref == 'refs/heads/master' }}
+    if: ${{ github.ref == 'refs/heads/master' && inputs.release_ref == '' }}
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
