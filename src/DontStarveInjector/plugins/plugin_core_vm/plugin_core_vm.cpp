@@ -150,7 +150,7 @@ struct CoreVmPlugin final : IPlugin {
 
     CoreVmPlugin() {
         man.id = "core.vm";
-        man.version = "0.2.0";
+        man.version = "0.2.1";
         man.phases = PluginPhase::EarlyNative;
         man.support_reload = false;
         // High priority (low number): native VM face before feature plugins.
