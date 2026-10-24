@@ -1229,6 +1229,7 @@ char luajit_ds_check_slowtailcall(lua_State *L, const char *chunkname) {
 }
 
 #include "injector/GameInjectorApply.hpp"
+#include "injector/GameInjectorPackages.hpp"
 
 // Lua-face package discovery. The registry in Mod/plugins/init.lua used to be a
 // hand-written stem list; DST's Lua sandbox has no directory listing, so the
@@ -1236,10 +1237,6 @@ char luajit_ds_check_slowtailcall(lua_State *L, const char *chunkname) {
 // listed on Linux aborted the whole chunk on a missing modinfo.lua). This export
 // answers "which package dirs under <plugins>/ carry modinfo.lua" from the same
 // filesystem the native loader scans, so Lua never references an absent package.
-static std::vector<std::string> game_injector_list_plugin_packages(const std::string &plugins_dir) {
-    return ds::plugin::list_plugin_packages(plugins_dir);
-}
-
 int luaopen_GameInjector(lua_State* L) {
     sol::state_view lua(L);
     sol::table module = lua.create_table();
@@ -1251,7 +1248,7 @@ int luaopen_GameInjector(lua_State* L) {
     module.set_function("DS_LUAJIT_get_vm_type_name", &DS_LUAJIT_get_vm_type_name);
     module.set_function("DS_LUAJIT_update", &DS_LUAJIT_update);
     module.set_function("DS_LUAJIT_get_mod_version", &DS_LUAJIT_get_mod_version);
-    module.set_function("DS_LUAJIT_list_plugin_packages", &game_injector_list_plugin_packages);
+    module.set_function("DS_LUAJIT_list_plugin_packages", &ds::core_vm::list_plugin_packages);
 
     // Typed exports from plugins (GiSig trampolines / LuaCFunction).
     module.push();

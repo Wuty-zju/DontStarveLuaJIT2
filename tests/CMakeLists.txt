@@ -400,6 +400,20 @@ else()
 endif()
 add_test(NAME plugin_pack_modinfo COMMAND test_plugin_pack_modinfo)
 
+add_executable(test_plugin_package_binding
+    plugin/test_plugin_package_binding.cpp
+    ${CMAKE_SOURCE_DIR}/src/DontStarveInjector/core/PluginPath.cpp)
+target_include_directories(test_plugin_package_binding PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/DontStarveInjector
+    ${SOL2_INCLUDE_DIRS}
+    ${PROJECT_SOURCE_DIR}/src/lua51original/src
+    ${CMAKE_BINARY_DIR}/src/lua51original)
+target_compile_features(test_plugin_package_binding PRIVATE cxx_std_23)
+target_compile_definitions(test_plugin_package_binding PRIVATE DS_PLUGIN_HOST_STATIC)
+target_link_libraries(test_plugin_package_binding PRIVATE liblua_static ${CMAKE_DL_LIBS})
+add_test(NAME plugin_package_binding COMMAND test_plugin_package_binding ${CMAKE_SOURCE_DIR})
+
+
 add_executable(test_external_plugin_discovery
     ${CMAKE_CURRENT_SOURCE_DIR}/plugin/test_external_plugin_discovery.cpp
     ${CMAKE_SOURCE_DIR}/src/DontStarveInjector/core/ExternalPluginDiscovery.cpp
