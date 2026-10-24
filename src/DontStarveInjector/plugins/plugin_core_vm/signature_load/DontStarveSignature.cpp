@@ -1,3 +1,9 @@
+#if defined(_WIN64)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <Windows.h>
+#endif
 #include <string>
 #include <expected>
 #include <optional>
@@ -14,6 +20,7 @@
 #include "util/platform.hpp"
 #include "config/InjectorHostConfig.hpp"
 #include "DontStarveSignature.hpp"
+#include "NumericApiIdentity.hpp"
 
 #include "MemorySignature.hpp"
 #include "ctx.hpp"
@@ -35,6 +42,26 @@
 #include "Progress.hpp"
 
 using namespace std::literals;
+
+static bool repair_numeric_api_identity(Signatures &signatures, uintptr_t base) {
+#if defined(_WIN64)
+    const bool repaired = numeric_api_identity::repair(signatures.funcs, base, [](uintptr_t address) -> std::span<const uint8_t> {
+        MEMORY_BASIC_INFORMATION region{};
+        if (!VirtualQuery(reinterpret_cast<void *>(address), &region, sizeof(region)) ||
+            region.State != MEM_COMMIT || (region.Protect & (PAGE_GUARD | PAGE_NOACCESS)) != 0 ||
+            (region.Protect & (PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) == 0) return {};
+        const auto remaining = region.RegionSize - (address - reinterpret_cast<uintptr_t>(region.BaseAddress));
+        if (remaining < numeric_api_identity::wrapper_size) return {};
+        return {reinterpret_cast<const uint8_t *>(address), numeric_api_identity::wrapper_size};
+    });
+    if (repaired) spdlog::warn("corrected swapped lua_isnumber/lua_tointeger signatures from numeric return semantics");
+    return repaired;
+#else
+    (void) signatures;
+    (void) base;
+    return false;
+#endif
+}
 
 bool is_lua_signature_export(std::string_view name) {
     return !get_missfuncs().contains(name) &&
@@ -86,6 +113,7 @@ create_signature(uintptr_t targetLuaModuleBase, const std::function<void(const S
         return std::unexpected(errormsg);
     }
     signatures.version = SignatureJson::current_version();
+    repair_numeric_api_identity(signatures, targetLuaModuleBase);
     updated(signatures);
     for (auto &[name, signature]: signatures.funcs) {
         spdlog::info("create signature [{}]: {}", name, signature.offset);
@@ -134,8 +162,9 @@ get_signatures(Signatures &signatures, uintptr_t targetLuaModuleBase,
             return std::unexpected(errormsg);
         }
         signatures.version = SignatureJson::current_version();
-        updated(signatures);
     }
+    const bool repaired = repair_numeric_api_identity(signatures, targetLuaModuleBase);
+    if (need_update || repaired) updated(signatures);
     return exports;
 }
 

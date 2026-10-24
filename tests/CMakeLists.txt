@@ -274,6 +274,11 @@ target_compile_definitions(test_luajit_bootstrap_config PRIVATE DS_PLUGIN_HOST_S
 target_link_libraries(test_luajit_bootstrap_config PRIVATE nlohmann_json::nlohmann_json)
 add_test(NAME luajit_bootstrap_config COMMAND test_luajit_bootstrap_config)
 
+add_executable(test_numeric_api_identity plugin/test_numeric_api_identity.cpp)
+target_include_directories(test_numeric_api_identity PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/DontStarveInjector)
+target_compile_features(test_numeric_api_identity PRIVATE cxx_std_23)
+add_test(NAME numeric_api_identity COMMAND test_numeric_api_identity)
 
 
 
@@ -423,7 +428,6 @@ target_compile_features(test_plugin_package_binding PRIVATE cxx_std_23)
 target_compile_definitions(test_plugin_package_binding PRIVATE DS_PLUGIN_HOST_STATIC)
 target_link_libraries(test_plugin_package_binding PRIVATE liblua_static ${CMAKE_DL_LIBS})
 add_test(NAME plugin_package_binding COMMAND test_plugin_package_binding ${CMAKE_SOURCE_DIR})
-
 
 add_executable(test_external_plugin_discovery
     ${CMAKE_CURRENT_SOURCE_DIR}/plugin/test_external_plugin_discovery.cpp
