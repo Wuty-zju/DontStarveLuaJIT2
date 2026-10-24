@@ -4,6 +4,7 @@ permissions:
   contents: write
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
@@ -110,6 +111,13 @@ jobs:
         shell: bash
         run: |
           cmake --build ./builds/ninja-multi-vcpkg --config "${{ env.PLUGIN_BUILD_CONFIG }}"
+
+      - name: Offline compatibility regressions
+        shell: bash
+        run: |
+          ctest --test-dir builds/ninja-multi-vcpkg -C "${{ env.PLUGIN_BUILD_CONFIG }}" \
+            --output-on-failure --no-tests=error \
+            -R '^(plugin_package_binding|luajit_bootstrap_config|numeric_api_identity)$'
 
       - name: CMake install
         shell: bash
