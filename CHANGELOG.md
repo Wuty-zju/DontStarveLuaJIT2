@@ -1,5 +1,12 @@
 # 更新日志
 
+## 3.3.2.1（fork 适配版）
+
+- 基于上游 `201ea9b`，修复动态插件发现返回类型不符合 Lua 数组契约的问题，恢复插件注册及正常 JIT 启用流程。
+- 从实际加载的 Injector 目录解析 Mod 路径，兼容缺少路径字段的旧配置及 Windows Unicode 路径。
+- 将 Windows x64 数字 API 身份校验适配到当前签名流程，修正有充分语义证据的接口角色反转。
+- 增加三项离线回归及构建门禁。商店业务错误与服务器验签仍需游戏内对照验收。
+
 ## 未发布
 
 - Linux/macOS 包不再因 `render.shadow` 报错，插件 Lua 注册表改为**按盘上内容发现**：`Mod/plugins/init.lua` 不再手写包清单，而是调用新导出 `GameInjector.DS_LUAJIT_list_plugin_packages(plugins_dir)`（`core/PluginPath.cpp::list_plugin_packages`；与 native loader 扫描同一文件系统，返回含 `modinfo.lua` 的 `plugin_*` 目录名，排序，路径按 UTF-8 解码）。因此非 Windows 包里不存在的 Windows 专用 `plugin_render_shadow` 根本不会被引用——此前 `load_package` 打不开 `modinfo.lua` 即 `error`，而 `modmain` 执行 `plugins/init.lua` 未包 `pcall`，整个 AfterModMain 注册表随之中断（所有插件丢失）。每个包独立 `pcall` 加载（单个坏包只记日志，不拖垮其余）；无 `GameInjector`（未注入 / 缺 `core.vm` / 单测）时插件系统整体禁用——`init.lua` 直接返回空注册表并打印原因，不保留静态兜底清单。`test_plugin_path` 新增发现语义用例。

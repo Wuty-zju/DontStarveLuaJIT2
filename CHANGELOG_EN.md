@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.3.2.1 (fork compatibility release)
+
+- Based on upstream `201ea9b`, return discovered plugin packages as a Lua array to restore plugin registration and the normal JIT activation lifecycle.
+- Resolve the Mod path from the loaded Injector directory; retain valid options in legacy configurations without a path and support Windows Unicode paths.
+- Adapt the Windows x64 numeric API identity guard to the current signature pipeline, repairing reversed roles only when supported by complete semantic evidence.
+- Add three offline regressions and a build gate. Store business errors and server-side verification still require controlled in-game acceptance.
+
 ## Unreleased
 
 - Linux/macOS packages no longer fail on `render.shadow`, and the Lua plugin registry is now **discovered from disk**: `Mod/plugins/init.lua` no longer carries a hand-written package list — it calls the new `GameInjector.DS_LUAJIT_list_plugin_packages(plugins_dir)` export (`core/PluginPath.cpp::list_plugin_packages`; same filesystem the native loader scans, returns sorted `plugin_*` dirs that contain `modinfo.lua`, paths decoded as UTF-8). The Windows-only `plugin_render_shadow` is therefore never referenced on non-Windows packages, where its directory does not exist — previously `load_package` raised on the missing `modinfo.lua`, and `modmain` runs `plugins/init.lua` without `pcall`, so the whole AfterModMain registry aborted (every plugin dropped). Packages load one-by-one under `pcall` (a broken package is logged, the rest still register); without `GameInjector` (not injected / no `core.vm` / unit-test runs) the plugin system is fully disabled — `init.lua` returns an empty registry and logs why, with no static fallback list. `test_plugin_path` covers the discovery semantics.
