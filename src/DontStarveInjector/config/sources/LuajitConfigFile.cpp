@@ -1,4 +1,5 @@
 #include "LuajitConfigFile.hpp"
+#include "core/PluginPath.hpp"
 #include "config/BaseOptionKeys.hpp"
 #include "plugins/plugin_core_vm/VmOptionKeys.hpp"
 #include <nlohmann/json.hpp>
@@ -19,7 +20,9 @@ namespace nlohmann {
         using ds::config::keys::kAlwaysEnableMod;
         using ds::config::keys::kDisableJITWhenServer;
         using ds::config::keys::kModmainPath;
-        j.at(std::string{kModmainPath}).get_to(s.modmain_path);
+        if (j.contains(std::string{kModmainPath})) {
+            j.at(std::string{kModmainPath}).get_to(s.modmain_path);
+        }
 
         if (j.contains(std::string{kDisableJITWhenServer})) {
             j.at(std::string{kDisableJITWhenServer}).get_to(s.server_disable_luajit);
@@ -41,13 +44,18 @@ std::optional<luajit_config> luajit_config::read_from_file(std::filesystem::path
     }
     if (path.empty() || !std::filesystem::exists(path))
         return std::nullopt;
-    std::ifstream sf(path.string().c_str());
+    std::ifstream sf(path);
     if (!sf.is_open())
         return std::nullopt;
     try {
         nlohmann::json j;
         sf >> j;
-        return j.get<luajit_config>();
+        if (!j.is_object()) return std::nullopt;
+        auto config = j.get<luajit_config>();
+        if (config.modmain_path.empty()) {
+            config.modmain_path = ds::plugin::modmain_path_from_module_dir(ds::plugin::injector_module_dir());
+        }
+        return config;
     } catch (...) {
         return std::nullopt;
     }

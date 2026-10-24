@@ -264,6 +264,17 @@ target_include_directories(test_crash_sentinel PRIVATE
 target_compile_features(test_crash_sentinel PRIVATE cxx_std_23)
 add_test(NAME crash_sentinel COMMAND test_crash_sentinel)
 
+add_executable(test_luajit_bootstrap_config
+    plugin/test_luajit_bootstrap_config.cpp
+    ${CMAKE_SOURCE_DIR}/src/DontStarveInjector/config/sources/LuajitConfigFile.cpp)
+target_include_directories(test_luajit_bootstrap_config PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/DontStarveInjector)
+target_compile_features(test_luajit_bootstrap_config PRIVATE cxx_std_23)
+target_compile_definitions(test_luajit_bootstrap_config PRIVATE DS_PLUGIN_HOST_STATIC)
+target_link_libraries(test_luajit_bootstrap_config PRIVATE nlohmann_json::nlohmann_json)
+add_test(NAME luajit_bootstrap_config COMMAND test_luajit_bootstrap_config)
+
+
 
 
 add_executable(test_plugin_pending_updates

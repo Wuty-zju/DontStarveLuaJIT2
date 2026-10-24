@@ -21,6 +21,17 @@ DS_INJECTOR_CXX_API std::filesystem::path plugins_dir_from_module_dir(const std:
 // because the definition lives in Injector.dll (process-wide shared state).
 DS_INJECTOR_CXX_API std::filesystem::path injector_module_dir();
 
+// The loaded Injector's sibling is authoritative for local and Workshop installs.
+// Return UTF-8 for the Lua/config boundary; an absent package has no path.
+inline std::string modmain_path_from_module_dir(const std::filesystem::path &module_dir) {
+    if (module_dir.empty()) return {};
+    const auto path = module_dir / "modmain.lua";
+    std::error_code ec;
+    if (!std::filesystem::is_regular_file(path, ec)) return {};
+    const auto utf8 = path.generic_u8string();
+    return {utf8.begin(), utf8.end()};
+}
+
 // Resolve modmain_path: non-empty test override, optional provider, else empty.
 // Task 2 registers the production provider that reads luajit_config.
 DS_INJECTOR_CXX_API std::string resolve_modmain_path();

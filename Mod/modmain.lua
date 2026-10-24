@@ -337,6 +337,14 @@ local function main()
 
 
 	function _M:GetModMainPath(injector)
+		if injector.DS_LUAJIT_get_modmain_path then
+			local path = injector.DS_LUAJIT_get_modmain_path()
+			if type(path) == "string" and path ~= "" then
+				self.modmain_path = path
+				self.workshop_dir_root = path:match("^(.*[/\\])")
+				return
+			end
+		end
 		local modmain_path = debug.getinfo(1).source
 
 		local modname = filename2modname(modmain_path)

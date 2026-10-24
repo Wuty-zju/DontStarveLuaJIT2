@@ -208,7 +208,7 @@ std::filesystem::path plugins_dir_from_modmain(std::string_view modmain_path) {
     if (modmain_path.empty()) {
         return {};
     }
-    return std::filesystem::path(modmain_path).parent_path() / "plugins";
+    return path_from_utf8(modmain_path).parent_path() / "plugins";
 }
 
 std::filesystem::path plugins_dir_from_module_dir(const std::filesystem::path &module_dir) {

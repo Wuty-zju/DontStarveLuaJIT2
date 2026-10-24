@@ -8,8 +8,9 @@
 int main(int argc, char **argv) {
     if (argc != 2) return 2;
     namespace fs = std::filesystem;
-    const auto root = fs::temp_directory_path() /
+    const auto temp = fs::temp_directory_path() /
                       ("ds-package-binding-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+    const auto root = temp / fs::path(u8"\u6d4b\u8bd5");
     for (const auto *stem: {"plugin_z", "plugin_a"}) {
         fs::create_directories(root / stem);
         std::ofstream(root / stem / "modinfo.lua") << "-- package marker";
@@ -24,7 +25,8 @@ int main(int argc, char **argv) {
         lua.open_libraries(sol::lib::base, sol::lib::package, sol::lib::table, sol::lib::string);
         auto injector = lua.create_named_table("GameInjector");
         injector.set_function("DS_LUAJIT_list_plugin_packages", &ds::core_vm::list_plugin_packages);
-        lua["plugins_dir"] = root.generic_string();
+        const auto utf8 = root.generic_u8string();
+        lua["plugins_dir"] = std::string(utf8.begin(), utf8.end());
         lua["repo_root"] = fs::path(argv[1]).generic_string();
         const auto result = lua.safe_script(R"(
             local list = GameInjector.DS_LUAJIT_list_plugin_packages
@@ -70,6 +72,6 @@ int main(int argc, char **argv) {
             exit_code = 1;
         }
     }
-    fs::remove_all(root);
+    fs::remove_all(temp);
     return exit_code;
 }

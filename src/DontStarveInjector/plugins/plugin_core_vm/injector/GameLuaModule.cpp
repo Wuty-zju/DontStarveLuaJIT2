@@ -1248,6 +1248,9 @@ int luaopen_GameInjector(lua_State* L) {
     module.set_function("DS_LUAJIT_get_vm_type_name", &DS_LUAJIT_get_vm_type_name);
     module.set_function("DS_LUAJIT_update", &DS_LUAJIT_update);
     module.set_function("DS_LUAJIT_get_mod_version", &DS_LUAJIT_get_mod_version);
+    module.set_function("DS_LUAJIT_get_modmain_path", [] {
+        return ds::plugin::modmain_path_from_module_dir(ds::plugin::injector_module_dir());
+    });
     module.set_function("DS_LUAJIT_list_plugin_packages", &ds::core_vm::list_plugin_packages);
 
     // Typed exports from plugins (GiSig trampolines / LuaCFunction).
