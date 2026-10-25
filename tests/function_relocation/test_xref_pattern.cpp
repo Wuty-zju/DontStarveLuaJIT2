@@ -231,6 +231,38 @@ static void test_tiny_unmatched_body_stays_in_bounds() {
 #endif
 }
 
+static void test_coincidental_relative_call_is_not_an_identity() {
+    // Unrelated callees can have the same rel32 displacement at different
+    // offsets. A short raw needle spanning that CALL must not identify a body.
+    uint8_t train_bytes[48];
+    uint8_t target_bytes[96];
+    std::memset(train_bytes, 0x90, sizeof(train_bytes));
+    std::memset(target_bytes, 0xcc, sizeof(target_bytes));
+    const uint8_t shared[] = {0xe8, 0x18, 0xff, 0xff, 0xff, 0x48, 0x8b, 0x4c, 0x24, 0x30};
+    std::memcpy(train_bytes + 16, shared, sizeof(shared));
+    std::memcpy(target_bytes + 16 + 32, shared, sizeof(shared));
+    train_bytes[sizeof(train_bytes) - 1] = 0xc3;
+    target_bytes[16 + 64 - 1] = 0xc3;
+    const auto train_base = reinterpret_cast<uintptr_t>(train_bytes);
+    const auto target_base = reinterpret_cast<uintptr_t>(target_bytes);
+    function_relocation::ModuleSections train{}, target{};
+    train.text = train.details.range = {train_base, sizeof(train_bytes)};
+    target.text = target.details.range = {target_base, sizeof(target_bytes)};
+    train.function_table.add({train_base, train_base + sizeof(train_bytes)});
+    target.function_table.add({target_base + 16, target_base + 16 + 64});
+    auto &candidate = target.functions.emplace_back();
+    candidate.address = target_base + 16;
+    candidate.size = 64;
+    candidate.module = &target;
+    function_relocation::Function original{};
+    original.address = train_base;
+    original.size = sizeof(train_bytes);
+    original.name = "unrelated_relative_calls";
+    original.module = &train;
+    function_relocation::SignatureInfo signature{};
+    REQUIRE(target.try_fix_func_address(original, &signature, target_base + 1) == 0);
+}
+
 int main() {
     gum_init_embedded();
     REQUIRE(function_relocation::init_ctx());
@@ -262,6 +294,7 @@ int main() {
     test_unknown_insn_empty();
     test_early_return_does_not_hide_type_check();
     test_tiny_unmatched_body_stays_in_bounds();
+    test_coincidental_relative_call_is_not_an_identity();
     std::puts("test_xref_pattern: ok");
     function_relocation::deinit_ctx();
     gum_deinit_embedded();
