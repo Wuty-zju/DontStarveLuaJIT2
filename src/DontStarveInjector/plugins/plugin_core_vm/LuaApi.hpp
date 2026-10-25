@@ -77,6 +77,8 @@
     _(lua_setlocal)          \
     _(lua_getupvalue)        \
     _(lua_setupvalue)        \
+    _(lua_getfuncchunkname)  \
+    _(lua_setfuncchunkname)  \
     _(lua_sethook)           \
     _(lua_gethook)           \
     _(lua_gethookmask)       \

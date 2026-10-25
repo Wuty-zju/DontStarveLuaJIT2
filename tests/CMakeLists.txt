@@ -72,6 +72,13 @@ if(WIN32)
     endfunction()
 endif()
 
+add_executable(test_lua_provenance_dispatch plugin/test_lua_provenance_dispatch.cpp)
+target_include_directories(test_lua_provenance_dispatch PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/DontStarveInjector/plugins/plugin_core_vm)
+target_link_libraries(test_lua_provenance_dispatch PRIVATE ${CMAKE_DL_LIBS})
+add_dependencies(test_lua_provenance_dispatch ${LUAJIT_LIBRARIES})
+add_test(NAME lua_provenance_dispatch COMMAND test_lua_provenance_dispatch $<TARGET_FILE:${LUAJIT_LIBRARIES}>)
+
 add_executable(test_buffer_name_pool
     ${CMAKE_CURRENT_SOURCE_DIR}/test_buffer_name_pool.cpp)
 target_include_directories(test_buffer_name_pool PRIVATE
