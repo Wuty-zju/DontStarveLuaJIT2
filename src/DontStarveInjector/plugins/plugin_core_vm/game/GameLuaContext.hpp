@@ -11,6 +11,13 @@
 #include "GameLuaType.hpp"
 #include "LuaEvent.hpp"
 
+// Optional Klei exports: lua.h can be included before lj_arch.h exposes the
+// feature switches. Keep the dispatch signatures available in either order.
+extern "C" {
+LUA_API const char *lua_getfuncchunkname(lua_State *L, int idx);
+LUA_API void lua_setfuncchunkname(lua_State *L, int idx, const char *name);
+}
+
 /*
     this is a struct to hold all lua export functions
     so we can replace them with our own implementation
