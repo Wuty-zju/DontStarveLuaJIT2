@@ -459,13 +459,16 @@ namespace function_relocation {
                 uint64_t address;
                 size_t size;
                 x86_insn id;
+                bool boilerplate;
             };
             std::vector<InsnInfo> infos;
             disasm ds{reinterpret_cast<uint8_t *>(body_begin),
                       static_cast<size_t>(body_end - body_begin)};
+            bool in_prologue = true;
             for (const auto &insn : ds) {
+                in_prologue &= is_prologue_instruction(insn);
                 infos.push_back({insn.address, insn.size,
-                                 static_cast<x86_insn>(insn.id)});
+                                 static_cast<x86_insn>(insn.id), in_prologue});
             }
             if (infos.empty()) return out;
 
@@ -479,6 +482,7 @@ namespace function_relocation {
                 micro_window::MicroInsn m;
                 m.address = infos[k].address;
                 m.size = infos[k].size;
+                m.boilerplate = infos[k].boilerplate;
                 m.splits = (infos[k].id == X86_INS_CALL ||
                             infos[k].id == X86_INS_JMP);
                 if (k < sig.asm_codes.size()) {

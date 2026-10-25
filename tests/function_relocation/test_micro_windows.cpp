@@ -189,6 +189,20 @@ static void test_weight_ordering() {
     REQUIRE(windows.front().weight >= 5.0f);
 }
 
+static void test_prologue_is_not_identity() {
+    std::vector<MicroInsn> body;
+    for (int i = 0; i < 8; ++i) {
+        auto insn = mk(0x8000 + i * 3, "48 89 0a", 1.0f);
+        insn.boilerplate = true;
+        body.push_back(insn);
+    }
+    REQUIRE(generate_micro_windows(body, 0x8000).empty());
+    body.back().boilerplate = false;
+    const auto windows = generate_micro_windows(body, 0x8000);
+    REQUIRE(!windows.empty());
+    for (const auto &window: windows) REQUIRE(window.pattern.size() >= 5 * 3 * 3 - 1);
+}
+
 int main(int argc, char **argv) {
     std::string sel = (argc > 1) ? argv[1] : "all";
     if (sel == "all" || sel == "call-interior") test_call_not_interior();
@@ -198,6 +212,7 @@ int main(int argc, char **argv) {
     if (sel == "all" || sel == "jmp-splits") test_jmp_splits();
     if (sel == "all" || sel == "low-distinguishing") test_skip_low_distinguishing();
     if (sel == "all" || sel == "weight-ordering") test_weight_ordering();
+    test_prologue_is_not_identity();
     std::puts("test_micro_windows: ok");
     return 0;
 }

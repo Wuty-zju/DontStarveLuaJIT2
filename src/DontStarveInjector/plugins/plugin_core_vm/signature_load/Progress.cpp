@@ -15,7 +15,6 @@
 static struct {
     int max_step;
     int cur;
-    HWND hwnd;
     HWND hProgress;
     HWND hStatusText;
     std::atomic_bool ready;
@@ -91,7 +90,6 @@ void ShowProgressWindow(int maxstep, Generator<int>& gen) {
             CW_USEDEFAULT, CW_USEDEFAULT, 400, 100,
             NULL, NULL, GetModuleHandle(NULL), NULL);
 
-    progress_ctx.hwnd = hwnd;
     struct WindowCleanup {
         HWND hwnd;
         ~WindowCleanup() {
@@ -100,7 +98,6 @@ void ShowProgressWindow(int maxstep, Generator<int>& gen) {
                 KillTimer(hwnd, ID_TIMER);
                 DestroyWindow(hwnd);
             }
-            progress_ctx.hwnd = nullptr;
         }
     } cleanup{hwnd};
 
@@ -132,9 +129,6 @@ void set_progress(int step, const std::string_view& msg) {
     if (step > 0) {
         progress_ctx.cur += step;
         SendMessage(progress_ctx.hProgress, PBM_SETPOS, progress_ctx.cur, 0);
-        if (progress_ctx.cur >= progress_ctx.max_step) {// 进度达到 100% 时关闭窗口
-            PostMessage(progress_ctx.hwnd, WM_CLOSE, 0, 0);
-        }
     }
     if (!msg.empty()) {
         std::string statusText = std::format("{:.1f} % [{}]", progress_ctx.cur / (float)progress_ctx.max_step * 100, msg);

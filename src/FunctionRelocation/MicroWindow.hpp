@@ -50,6 +50,7 @@ struct MicroInsn {
     bool splits = false;     // true for CALL and unconditional JMP — ends a segment
     std::string hex;         // pre-wildcarded hex pattern ("xx " per byte; "?? " wildcard)
     float weight = 0.0f;     // block score of the containing CodeBlock
+    bool boilerplate = false; // entry register saves / stack setup, not identity evidence
 };
 
 // One generated micro-window pattern.
@@ -110,10 +111,13 @@ inline std::vector<MicroWindow> generate_micro_windows(
             for (size_t wstart = seg_start; wstart + wlen <= seg_end; ++wstart) {
                 std::string pattern;
                 float weight = 0.0f;
+                bool has_body = false;
                 for (size_t k = wstart; k < wstart + wlen; ++k) {
                     pattern += insns[k].hex;
+                    has_body |= !insns[k].boilerplate;
                     if (insns[k].weight > weight) weight = insns[k].weight;
                 }
+                if (!has_body) continue; // a unique frame prologue is still not a function identity
                 // Trim trailing whitespace.
                 while (!pattern.empty() && pattern.back() == ' ') pattern.pop_back();
                 if (count_distinguishing_bytes(pattern) < 5) continue;

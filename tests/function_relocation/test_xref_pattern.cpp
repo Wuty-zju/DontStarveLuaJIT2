@@ -288,6 +288,13 @@ int main() {
     auto decoded = function_relocation::disasm::get_insn(const_cast<uint8_t *>(prefixed), sizeof(prefixed));
     REQUIRE(decoded && function_relocation::instruction_pattern(*decoded) == "66 48 8d 05 ?? ?? ?? ??");
     decoded.reset();
+    const uint8_t frame[] = {0x4c, 0x89, 0x4c, 0x24, 0x20, 0x53, 0x48, 0x83, 0xec, 0x20, 0x48, 0x8b, 0x01};
+    size_t frame_ops = 0;
+    for (const auto &insn: function_relocation::disasm{const_cast<uint8_t *>(frame), sizeof(frame)}) {
+        REQUIRE(function_relocation::is_prologue_instruction(insn) == (frame_ops < 3));
+        ++frame_ops;
+    }
+    REQUIRE(frame_ops == 4);
     test_rip_lea_wildcards_disp32();
     test_mov_imm32_wildcards_imm();
     test_mid_body_xref_negative_pattern_offset();

@@ -7,6 +7,24 @@
 
 namespace function_relocation {
 
+    // Register saves and stack-frame allocation carry no function identity.
+    // Only the contiguous entry prefix is classified this way by the caller.
+    inline bool is_prologue_instruction(const cs_insn &insn) {
+        const auto &x = insn.detail->x86;
+        if (insn.id == X86_INS_PUSH && x.op_count == 1 && x.operands[0].type == X86_OP_REG) return true;
+        if (x.op_count != 2) return false;
+        const auto &dst = x.operands[0];
+        const auto &src = x.operands[1];
+        if (insn.id == X86_INS_MOV && dst.type == X86_OP_MEM && dst.mem.base == X86_REG_RSP &&
+            dst.mem.index == X86_REG_INVALID && src.type == X86_OP_REG) return true;
+        if (dst.type != X86_OP_REG) return false;
+        if (insn.id == X86_INS_SUB && dst.reg == X86_REG_RSP && src.type == X86_OP_IMM) return true;
+        if (dst.reg != X86_REG_RBP) return false;
+        return (insn.id == X86_INS_MOV && src.type == X86_OP_REG && src.reg == X86_REG_RSP) ||
+               (insn.id == X86_INS_LEA && src.type == X86_OP_MEM && src.mem.base == X86_REG_RSP &&
+                src.mem.index == X86_REG_INVALID);
+    }
+
     // Preserve prefixes, opcodes and addressing modes. Mask only fields identified
     // by the decoder, including zero displacements and prefixed/imm64 instructions.
     inline std::string instruction_pattern(const cs_insn &insn, bool module_immediate = false) {
