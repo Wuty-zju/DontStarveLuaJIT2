@@ -1,4 +1,14 @@
 if (WIN32)
+    add_executable(test_signature_progress
+        plugin/test_signature_progress.cpp
+        ${CMAKE_SOURCE_DIR}/src/DontStarveInjector/plugins/plugin_core_vm/signature_load/Progress.cpp)
+    target_include_directories(test_signature_progress PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/DontStarveInjector/plugins/plugin_core_vm/signature_load)
+    target_compile_definitions(test_signature_progress PRIVATE SUPPORT_PROGRESS)
+    target_link_libraries(test_signature_progress PRIVATE comctl32)
+    add_test(NAME signature_progress COMMAND test_signature_progress)
+    set_tests_properties(signature_progress PROPERTIES TIMEOUT 20)
+
     add_library(lua51_sync_strfmt_pushfstring_module MODULE
         lua51_sync/strfmt_pushfstring_module.c)
     add_custom_target(lua51_sync_artifacts

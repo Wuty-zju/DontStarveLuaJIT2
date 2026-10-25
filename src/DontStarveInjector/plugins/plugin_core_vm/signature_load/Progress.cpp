@@ -19,7 +19,6 @@ static struct {
     HWND hProgress;
     HWND hStatusText;
     std::atomic_bool ready;
-    Generator<int>* gen;
 } progress_ctx;
 
 // 窗口过程函数
@@ -65,22 +64,8 @@ LRESULT CALLBACK ProgressWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM 
             progress_ctx.ready = true;
             return 0;
         }
-        case WM_TIMER: {
-            if (wParam == ID_TIMER) {
-                if (progress_ctx.gen) {
-                    if (*progress_ctx.gen) {
-                        (*progress_ctx.gen)(); 
-                    } else  {
-                        KillTimer(hwnd, ID_TIMER);
-                        PostMessage(hwnd, WM_CLOSE, 0, 0); // 进度完成，关闭窗口
-                    }
-                }
-            }
-            return 0;
-        }
         case WM_DESTROY: {
-            // 窗口销毁时退出消息循环
-            PostQuitMessage(0);
+            progress_ctx.ready = false;
             return 0;
         }
         default:
@@ -91,7 +76,7 @@ LRESULT CALLBACK ProgressWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM 
 void ShowProgressWindow(int maxstep, Generator<int>& gen) {
     progress_ctx.max_step = maxstep;
     progress_ctx.cur = 0;
-    progress_ctx.gen = &gen;
+    progress_ctx.ready = false;
     // 注册窗口类
     WNDCLASS wc = {0};
     wc.lpfnWndProc = ProgressWindowProc;
@@ -106,12 +91,27 @@ void ShowProgressWindow(int maxstep, Generator<int>& gen) {
             CW_USEDEFAULT, CW_USEDEFAULT, 400, 100,
             NULL, NULL, GetModuleHandle(NULL), NULL);
 
+    progress_ctx.hwnd = hwnd;
+    struct WindowCleanup {
+        HWND hwnd;
+        ~WindowCleanup() {
+            progress_ctx.ready = false;
+            if (hwnd) {
+                KillTimer(hwnd, ID_TIMER);
+                DestroyWindow(hwnd);
+            }
+            progress_ctx.hwnd = nullptr;
+        }
+    } cleanup{hwnd};
+
     // 显示窗口
     ShowWindow(hwnd, SW_SHOW);
     UpdateWindow(hwnd);
     // 模态消息循环
     MSG msg;
-    while (GetMessage(&msg, hwnd, 0, 0)) {
+    // The timer only wakes this loop. Resume the coroutine here, never across
+    // a Win32 callback: exceptions must unwind through WindowCleanup.
+    while (hwnd && IsWindow(hwnd) && GetMessage(&msg, hwnd, 0, 0) > 0) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
         if (progress_ctx.ready) {
@@ -122,7 +122,8 @@ void ShowProgressWindow(int maxstep, Generator<int>& gen) {
              }
         }
     }
-    DestroyWindow(hwnd);
+    // Closing the cosmetic window must not leave a partially resolved DB.
+    NoShowProgressWindow(0, gen);
 }
 
 void set_progress(int step, const std::string_view& msg) {
