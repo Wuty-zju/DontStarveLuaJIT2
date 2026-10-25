@@ -38,9 +38,9 @@ int main() {
                 "missing path discarded legal options");
         require(config->modmain_path == std::string(utf8.begin(), utf8.end()), "loaded module path not used");
     }
-    write(R"({"modmain_path":"custom/modmain.lua","always_enable_mod":true,"server_disable_luajit":false})");
+    write(R"({"modmain_path":"Don't Starve Together/mods/custom/modmain.lua","always_enable_mod":true,"server_disable_luajit":false})");
     auto config = luajit_config::read_from_file();
-    require(config && config->modmain_path == "custom/modmain.lua" && config->always_enable_mod && !config->server_disable_luajit,
+    require(config && config->modmain_path == "Don't Starve Together/mods/custom/modmain.lua" && config->always_enable_mod && !config->server_disable_luajit,
             "explicit path or legacy keys lost");
     for (const auto *invalid: {R"({"modmain_path":42})", R"({"AlwaysEnableMod":"true"})", "{", "[]", "null"}) {
         write(invalid);

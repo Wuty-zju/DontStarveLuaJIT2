@@ -81,7 +81,7 @@ local function main()
 		local fp = io.open(self.filepath, 'w')
 		if not fp then return end
 		if data and self.json_mode then
-			data = json.encode(data)
+			data = (json.encode_compliant or json.encode)(data)
 		end
 		if data then
 			fp:write(data)
