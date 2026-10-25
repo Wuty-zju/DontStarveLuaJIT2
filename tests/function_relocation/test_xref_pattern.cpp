@@ -234,7 +234,7 @@ static void test_tiny_unmatched_body_stays_in_bounds() {
 int main() {
     gum_init_embedded();
     REQUIRE(function_relocation::init_ctx());
-    function_relocation::ModuleSections sections;
+    function_relocation::ModuleSections sections{};
     sections.sections[".plt.sec"] = {0x1000, 0x100};
     sections.sections[".got"] = {0x2000, 0x100};
     REQUIRE(sections.in_plt(0x1000) && !sections.in_plt(0x1100));
