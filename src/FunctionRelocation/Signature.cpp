@@ -975,7 +975,7 @@ namespace function_relocation {
             {
                 const auto *bytes = reinterpret_cast<const uint8_t *>(original->address);
                 const size_t n = leaf;
-                for (size_t len = 12; len >= 6; --len) {
+                for (size_t len = (std::min)(n, size_t{12}); len >= 6; --len) {
                     // Prefer mid/late needles over shared prologues.
                     for (size_t off = n - len + 1; off-- > 0; ) {
                         size_t nonzero = 0;

@@ -274,6 +274,11 @@ target_compile_definitions(test_luajit_bootstrap_config PRIVATE DS_PLUGIN_HOST_S
 target_link_libraries(test_luajit_bootstrap_config PRIVATE nlohmann_json::nlohmann_json)
 add_test(NAME luajit_bootstrap_config COMMAND test_luajit_bootstrap_config)
 
+add_test(NAME lua51_reference_exports
+    COMMAND ${PYTHON_EXECUTABLE_NAME}
+        ${CMAKE_CURRENT_SOURCE_DIR}/plugin/test_lua51_reference_exports.py
+        ${CMAKE_SOURCE_DIR}/Mod/deps/lua51.dll)
+
 add_executable(test_numeric_api_identity plugin/test_numeric_api_identity.cpp)
 target_include_directories(test_numeric_api_identity PRIVATE
     ${CMAKE_SOURCE_DIR}/src/DontStarveInjector)

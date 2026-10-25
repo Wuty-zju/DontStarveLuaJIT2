@@ -1,7 +1,7 @@
 // unique_const must persist a scannable gum pattern from the string-xref
 // insn (wildcard the disp32/imm32), not clear SignatureInfo::pattern.
 //
-// Header-only: XrefPattern.hpp, no frida-gum.
+// Includes bounded-body regressions for the production signature matcher.
 
 #include "XrefPattern.hpp"
 #include "InstructionPattern.hpp"
@@ -15,6 +15,14 @@
 #include <cstring>
 #include <string>
 #include <vector>
+
+#ifdef _WIN32
+#define NOMINMAX
+#include <windows.h>
+#else
+#include <sys/mman.h>
+#include <unistd.h>
+#endif
 
 #define REQUIRE(cond)                                                                          \
     do {                                                                                       \
@@ -177,6 +185,52 @@ static void test_early_return_does_not_hide_type_check() {
     REQUIRE(target.try_fix_func_address(original, &signature, target_base + 1) == target_base + 64);
 }
 
+static void test_tiny_unmatched_body_stays_in_bounds() {
+    // A missing match must not underflow n - len when the body is shorter
+    // than the fixed 12-byte needle. Put it immediately after a guard page.
+    size_t page;
+    uint8_t *mapping;
+#ifdef _WIN32
+    SYSTEM_INFO system{};
+    GetSystemInfo(&system);
+    page = system.dwPageSize;
+    mapping = static_cast<uint8_t *>(VirtualAlloc(nullptr, 2 * page, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
+    REQUIRE(mapping);
+    DWORD old_protection;
+    REQUIRE(VirtualProtect(mapping, page, PAGE_NOACCESS, &old_protection));
+#else
+    page = static_cast<size_t>(sysconf(_SC_PAGESIZE));
+    mapping = static_cast<uint8_t *>(mmap(nullptr, 2 * page, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+    REQUIRE(mapping != MAP_FAILED);
+    REQUIRE(mprotect(mapping, page, PROT_NONE) == 0);
+#endif
+    std::memset(mapping + page, 0xc3, 12);// ret; absent from the target
+    uint8_t target_bytes[32];
+    std::memset(target_bytes, 0xcc, sizeof(target_bytes));
+    const auto train_base = reinterpret_cast<uintptr_t>(mapping + page);
+    const auto target_base = reinterpret_cast<uintptr_t>(target_bytes);
+    for (size_t size = 1; size < 12; ++size) {
+        function_relocation::ModuleSections train{}, target{};
+        train.text = train.details.range = {train_base, size};
+        target.text = target.details.range = {target_base, sizeof(target_bytes)};
+        train.function_table.add({train_base, train_base + size});
+        target.function_table.add({target_base + 16, target_base + sizeof(target_bytes)});
+        function_relocation::Function original{};
+        original.address = train_base;
+        original.size = size;
+        original.name = "tiny_unmatched";
+        original.module = &train;
+        REQUIRE(function_relocation::ensure_function_features(original));
+        function_relocation::SignatureInfo signature{};
+        REQUIRE(target.try_fix_func_address(original, &signature, target_base + 1) == 0);
+    }
+#ifdef _WIN32
+    REQUIRE(VirtualFree(mapping, 0, MEM_RELEASE));
+#else
+    REQUIRE(munmap(mapping, 2 * page) == 0);
+#endif
+}
+
 int main() {
     gum_init_embedded();
     REQUIRE(function_relocation::init_ctx());
@@ -207,6 +261,7 @@ int main() {
     test_mid_body_xref_negative_pattern_offset();
     test_unknown_insn_empty();
     test_early_return_does_not_hide_type_check();
+    test_tiny_unmatched_body_stays_in_bounds();
     std::puts("test_xref_pattern: ok");
     function_relocation::deinit_ctx();
     gum_deinit_embedded();
